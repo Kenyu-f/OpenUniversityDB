@@ -1,0 +1,39 @@
+name: Generate University Files (Batch)
+
+# Runs once a day, generates up to MAX_FILES_PER_RUN files (default 60),
+# spanning as many universities as needed. Fully resumable via progress/*.json
+# and STATUS.md. Designed to finish 100 universities x 15 files in ~25-30 days.
+
+on:
+  workflow_dispatch: {}   # lets you trigger it manually any time from the Actions tab
+  schedule:
+    - cron: '0 3 * * *'   # 03:00 UTC daily -- adjust to taste
+
+permissions:
+  contents: write
+
+jobs:
+  batch-generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run batch generation (resumable, multi-university, multi-model failover)
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          MAX_FILES_PER_RUN: '60'
+          SECONDS_BETWEEN_CALLS: '6'
+        run: |
+          python scripts/run_batch.py
+
+      - name: Commit and push generated files
+        run: |
+          git config user.name "university-db-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add universities/ progress/ STATUS.md
+          git diff --cached --quiet || git commit -m "Auto-generate batch: $(date -u +%Y-%m-%d)"
+          git push
