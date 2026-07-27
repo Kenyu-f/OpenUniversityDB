@@ -1,0 +1,88 @@
+{
+  "universities": [
+    {
+      "slug": "caltech",
+      "files": [
+        {
+          "name": "admissions.md",
+          "type": "file"
+        },
+        {
+          "name": "alumni.md",
+          "type": "file"
+        },
+        {
+          "name": "companies.md",
+          "type": "file"
+        },
+        {
+          "name": "funding.md",
+          "type": "file"
+        },
+        {
+          "name": "graduate_research.md",
+          "type": "file"
+        },
+        {
+          "name": "housing.md",
+          "type": "file"
+        },
+        {
+          "name": "internships.md",
+          "type": "file"
+        },
+        {
+          "name": "overview.md",
+          "type": "file"
+        },
+        {
+          "name": "publications.md",
+          "type": "file"
+        },
+        {
+          "name": "research_centers.md",
+          "type": "file"
+        },
+        {
+          "name": "resources.md",
+          "type": "file"
+        },
+        {
+          "name": "roadmap.md",
+          "type": "file"
+        },
+        {
+          "name": "undergraduate_research.md",
+          "type": "file"
+        },
+        {
+          "name": "laboratories",
+          "type": "dir",
+          "children": [
+            {
+              "name": "README.md",
+              "type": "file"
+            },
+            {
+              "name": "mathematics.md",
+              "type": "file"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "kyushu-university",
+      "files": [
+        {
+          "name": "admissions.md",
+          "type": "file"
+        },
+        {
+          "name": "overview.md",
+          "type": "file"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenUniversityDB</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
+<style>
+  :root{
+    --bg:#ffffff;
+    --fg:#111111;
+    --muted:#767676;
+    --line:#dddddd;
+    --serif:"Hiragino Mincho ProN","HiraMinProN-W3","Yu Mincho","YuMincho",serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);
+    font-family:var(--serif);-webkit-font-smoothing:antialiased;}
+  body{display:flex;min-height:100vh;}
+
+  /* ---------- Sidebar ---------- */
+  #sidebar{width:260px;flex:0 0 260px;border-right:1px solid var(--line);
+    padding:32px 20px;overflow-y:auto;height:100vh;position:sticky;top:0;}
+  #brand{font-size:15px;letter-spacing:.18em;margin:0 0 4px;}
+  #tagline{font-size:11px;color:var(--muted);letter-spacing:.05em;margin:0 0 28px;}
+  #tree{font-size:13px;line-height:1.9;}
+  .u-item{margin-bottom:2px;}
+  .u-name{cursor:pointer;display:block;padding:2px 0;color:var(--fg);
+    border:none;background:none;font:inherit;text-align:left;width:100%;}
+  .u-name:hover{color:var(--muted);}
+  .u-files{margin:2px 0 10px 14px;display:none;border-left:1px solid var(--line);
+    padding-left:10px;}
+  .u-files.open{display:block;}
+  .f-item{display:block;padding:1px 0;color:var(--muted);text-decoration:none;
+    font-size:12.5px;cursor:pointer;}
+  .f-item:hover,.f-item.active{color:var(--fg);}
+  .f-item.dir{color:var(--fg);font-style:italic;cursor:default;}
+  .f-sub{margin-left:12px;border-left:1px solid var(--line);padding-left:10px;}
+
+  /* ---------- Main ---------- */
+  #main{flex:1;padding:56px 48px 120px;max-width:760px;}
+  #placeholder{color:var(--muted);font-size:13px;}
+  #status{color:var(--muted);font-size:12px;margin-bottom:24px;}
+
+  /* ---------- Rendered markdown ---------- */
+  #content h1{font-size:26px;font-weight:400;letter-spacing:.04em;
+    border-bottom:1px solid var(--line);padding-bottom:14px;margin:0 0 28px;}
+  #content h2{font-size:18px;font-weight:400;margin:40px 0 14px;letter-spacing:.02em;}
+  #content h3{font-size:15px;font-weight:600;margin:28px 0 10px;}
+  #content p{font-size:14px;line-height:1.9;margin:0 0 16px;}
+  #content ul,#content ol{font-size:14px;line-height:1.85;padding-left:22px;margin:0 0 16px;}
+  #content li{margin-bottom:4px;}
+  #content a{color:var(--fg);text-decoration:underline;text-decoration-color:var(--line);}
+  #content a:hover{text-decoration-color:var(--fg);}
+  #content code{font-family:"SF Mono",Menlo,monospace;font-size:12.5px;
+    background:#f4f4f4;padding:1px 5px;border-radius:2px;}
+  #content pre{background:#f7f7f7;padding:14px 16px;overflow-x:auto;
+    border:1px solid var(--line);font-size:12.5px;}
+  #content pre code{background:none;padding:0;}
+  #content blockquote{margin:20px 0;padding:2px 0 2px 16px;border-left:2px solid var(--line);
+    color:var(--muted);font-size:13.5px;}
+  #content hr{border:none;border-top:1px solid var(--line);margin:36px 0;}
+  #content table{width:100%;border-collapse:collapse;font-size:13px;margin:0 0 24px;}
+  #content th,#content td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);
+    vertical-align:top;}
+  #content th{border-bottom:1px solid var(--fg);font-weight:600;}
+  #content tr:first-child th{border-top:1px solid var(--fg);}
+  #content em{color:var(--muted);}
+
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--line);}
+</style>
+</head>
+<body>
+
+<nav id="sidebar">
+  <p id="brand">OPENUNIVERSITYDB</p>
+  <p id="tagline">世界の大学 研究データベース</p>
+  <div id="tree">読み込み中…</div>
+</nav>
+
+<main id="main">
+  <div id="status"></div>
+  <div id="content">
+    <p id="placeholder">左のリストから大学とファイルを選んでください。</p>
+  </div>
+</main>
+
+<script>
+/*
+ * このHTMLは OpenUniversityDB リポジトリの直下に置く前提。
+ * GitHub APIは使わず、同じリポジトリ内の manifest.json と
+ * universities/ 以下のファイルを、すべて相対パスで読み込むだけ。
+ * ローカルでも file:// で開けば動作する（要ブラウザのfetch許可設定、
+ * もしくは `python3 -m http.server` などの簡易サーバー経由で開くのが確実）。
+ */
+
+const tree = document.getElementById("tree");
+const content = document.getElementById("content");
+const statusEl = document.getElementById("status");
+
+/* manifest.json を読んで左ナビを構築 */
+async function buildTree(){
+  try{
+    const res = await fetch("manifest.json");
+    if(!res.ok) throw new Error(res.status);
+    const manifest = await res.json();
+
+    tree.innerHTML = "";
+    for(const uni of manifest.universities){
+      const item = document.createElement("div");
+      item.className = "u-item";
+
+      const btn = document.createElement("button");
+      btn.className = "u-name";
+      btn.textContent = uni.slug;
+
+      const filesBox = document.createElement("div");
+      filesBox.className = "u-files";
+      renderEntries(filesBox, uni.files, `universities/${uni.slug}`);
+
+      btn.onclick = () => filesBox.classList.toggle("open");
+
+      item.appendChild(btn);
+      item.appendChild(filesBox);
+      tree.appendChild(item);
+    }
+  }catch(e){
+    tree.innerHTML = `<span style="color:#a33">manifest.json の読み込みに失敗: ${e.message}</span>`;
+  }
+}
+
+/* manifest.json の files 配列（file / dir の入れ子）を再帰的に描画 */
+function renderEntries(container, entries, basePath){
+  entries.forEach(entry => {
+    const path = `${basePath}/${entry.name}`;
+    if(entry.type === "file"){
+      const a = document.createElement("a");
+      a.className = "f-item";
+      a.textContent = entry.name;
+      a.onclick = () => loadFile(path, a);
+      container.appendChild(a);
+    } else if(entry.type === "dir"){
+      const label = document.createElement("div");
+      label.className = "f-item dir";
+      label.textContent = entry.name + "/";
+      const sub = document.createElement("div");
+      sub.className = "f-sub";
+      renderEntries(sub, entry.children || [], path);
+      container.appendChild(label);
+      container.appendChild(sub);
+    }
+  });
+}
+
+/* 選択された Markdown ファイルを相対パスで取得して表示 */
+async function loadFile(path, linkEl){
+  document.querySelectorAll(".f-item.active").forEach(el => el.classList.remove("active"));
+  if(linkEl) linkEl.classList.add("active");
+
+  statusEl.textContent = path;
+  content.innerHTML = `<p id="placeholder">読み込み中…</p>`;
+  try{
+    const res = await fetch(path);
+    if(!res.ok) throw new Error(res.status);
+    const md = await res.text();
+    content.innerHTML = marked.parse(md);
+  }catch(e){
+    content.innerHTML = `<p style="color:#a33">読み込みに失敗しました（${e.message}）</p>`;
+  }
+}
+
+buildTree();
+</script>
+</body>
+</html>
