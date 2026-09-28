@@ -1,0 +1,15 @@
+{
+  "university": "Caltech",
+  "country": "United States",
+  "language": "English",
+  "research_date": "2026-09-28",
+  "source_policy": "Official university sources only; current pages preferred.",
+  "sources": [
+    "https://www.admissions.caltech.edu/why-caltech/student-life/clubs-activities",
+    "https://sfe.caltech.edu/student-engagement/clubs",
+    "https://sfe.caltech.edu/student-engagement/clubs/reg",
+    "https://catalog.caltech.edu/current/general-information/student-life/",
+    "https://www.admissions.caltech.edu/why-caltech/research",
+    "https://quantumsurf.caltech.edu/quantumsurf"
+  ]
+}
